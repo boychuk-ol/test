@@ -23,19 +23,22 @@ public class TaskController {
         this.userService = userService;
     }
 
+    public String getUsernameUsingSecurityContext()
+    {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        return authentication.getName();
+    }
+
     // Головна сторінка сайту. Приймаємо параметр sort з документу для можливого сортування завдань
     @RequestMapping(value = {"/","/tasks", "/home"}, method = RequestMethod.GET)
     public String allTasks(@RequestParam(defaultValue = "taskId") String sort, Model model){
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String s = authentication.getName();
-
         List<Task> list = taskService.getTasksWithSorting(sort);
 
-        if(userService.findByUsername(s)!=null) {
-            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(s)));
-        }
-        else
+        if(userService.findByUsername(getUsernameUsingSecurityContext())!=null) {
+            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(getUsernameUsingSecurityContext())));
+        } else
         {
             list.removeIf(user -> user.getUser()!=null);
         }
@@ -43,7 +46,7 @@ public class TaskController {
         model.addAttribute("categories", new HashSet<Task.Category>());
         model.addAttribute("title", "My tasks");
         model.addAttribute("all_tasks", list);
-        model.addAttribute("username", s);
+        model.addAttribute("username", getUsernameUsingSecurityContext());
 
         return "mainPage";
     }
@@ -52,17 +55,14 @@ public class TaskController {
     @PostMapping("/tasks/add")
     public String addTask(@RequestParam String title,Model model)
     {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
 
         if(title!=null)
         {
-            Task task = new Task(title, false, false,userService.findByUsername(username));
+            Task task = new Task(title, false, false,userService.findByUsername(getUsernameUsingSecurityContext()));
 
             taskService.addTask(task);
             model.addAttribute("added_task", task);
-        }
-        else
+        } else
         {
             throw new NullPointerException();
         }
@@ -76,8 +76,7 @@ public class TaskController {
     {
         if (taskId>0) {
             taskService.deleteTask(taskId);
-        }
-        else
+        } else
         {
             throw new IllegalArgumentException("Error! This task has wrong id value");
         }
@@ -94,10 +93,9 @@ public class TaskController {
             Task task = taskService.getTaskById(taskId);
             task.setTitle(title);
             taskService.addTask(task);
-        }
-        else
+        } else
         {
-            throw new IllegalArgumentException("Error! This task has wrong id value or title value is null");
+            throw new IllegalArgumentException("Error! This task has wrong id value or title value is null or task with this id doesnt exist");
         }
 
         return "redirect:/tasks";
@@ -111,8 +109,7 @@ public class TaskController {
             Task task = taskService.getTaskById(taskId);
             task.setImportant(!taskService.getTaskById(taskId).isImportant());
             taskService.addTask(task);
-        }
-        else
+        } else
         {
             throw new IllegalArgumentException("Error! This task has wrong id value or such a task does not exist");
         }
@@ -128,8 +125,7 @@ public class TaskController {
             Task task = taskService.getTaskById(taskId);
             task.setDone(!taskService.getTaskById(taskId).isDone());
             taskService.addTask(task);
-        }
-        else
+        } else
         {
             throw new IllegalArgumentException("Error! This task has wrong id value or such a task does not exist");
         }
@@ -151,8 +147,7 @@ public class TaskController {
                 task.setLocalDate(null);
             }
             taskService.addTask(task);
-        }
-        else
+        } else
         {
             throw new IllegalArgumentException("Error! This task has wrong id value or such a task does not exist");
         }
@@ -169,8 +164,7 @@ public class TaskController {
             Task task = taskService.getTaskById(taskId);
             task.setCategory(categories);
             taskService.addTask(task);
-        }
-        else
+        } else
         {
             throw new IllegalArgumentException("Error! This task has wrong id value or such a task does not exist");
         }
@@ -183,22 +177,19 @@ public class TaskController {
     @GetMapping(value = "/important")
     public String important(Model model)
     {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String s = authentication.getName();
 
         List<Task> list = taskService.getAllOnlyImportantTasks(true);
 
-        if (userService.findByUsername(s)!=null) {
-            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(s)));
-        }
-        else
+        if (userService.findByUsername(getUsernameUsingSecurityContext())!=null) {
+            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(getUsernameUsingSecurityContext())));
+        } else
         {
             list.removeIf(user -> user.getUser()!=null);
         }
 
         model.addAttribute("title", "Important");
         model.addAttribute("all_tasks", list);
-        model.addAttribute("username", s);
+        model.addAttribute("username", getUsernameUsingSecurityContext());
 
         return "mainPage";
     }
@@ -207,22 +198,19 @@ public class TaskController {
     @GetMapping(value = "/done")
     public String done(Model model)
     {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String s = authentication.getName();
 
         List<Task> list = taskService.getAllOnlyDoneTasks(true);
 
-        if (userService.findByUsername(s)!=null) {
-            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(s)));
-        }
-        else
+        if (userService.findByUsername(getUsernameUsingSecurityContext())!=null) {
+            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(getUsernameUsingSecurityContext())));
+        } else
         {
             list.removeIf(user -> user.getUser()!=null);
         }
 
         model.addAttribute("title", "Done");
         model.addAttribute("all_tasks", list);
-        model.addAttribute("username", s);
+        model.addAttribute("username", getUsernameUsingSecurityContext());
 
         return "mainPage";
     }
@@ -231,22 +219,19 @@ public class TaskController {
     @GetMapping(value = "/todo")
     public String todo(Model model)
     {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String s = authentication.getName();
 
         List<Task> list = taskService.getAllOnlyDoneTasks(false);
 
-        if (userService.findByUsername(s)!=null) {
-            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(s)));
-        }
-        else
+        if (userService.findByUsername(getUsernameUsingSecurityContext())!=null) {
+            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(getUsernameUsingSecurityContext())));
+        } else
         {
             list.removeIf(user -> user.getUser()!=null);
         }
 
         model.addAttribute("title", "To do");
         model.addAttribute("all_tasks", list);
-        model.addAttribute("username", s);
+        model.addAttribute("username", getUsernameUsingSecurityContext());
 
         return "mainPage";
     }
@@ -255,23 +240,20 @@ public class TaskController {
     @GetMapping(value = "/withDate")
     public String withDate(Model model)
     {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String s = authentication.getName();
 
         List<Task> list = taskService.getAllTasks();
         list.removeIf(Task -> Task.getLocalDate()==null);
 
-        if (userService.findByUsername(s)!=null) {
-            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(s)));
-        }
-        else
+        if (userService.findByUsername(getUsernameUsingSecurityContext())!=null) {
+            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(getUsernameUsingSecurityContext())));
+        } else
         {
             list.removeIf(user -> user.getUser()!=null);
         }
 
         model.addAttribute("title", "With date");
         model.addAttribute("all_tasks", list);
-        model.addAttribute("username", s);
+        model.addAttribute("username", getUsernameUsingSecurityContext());
 
         return "mainPage";
     }
@@ -280,23 +262,20 @@ public class TaskController {
     @GetMapping(value = "/withoutDate")
     public String withoutDate(Model model)
     {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String s = authentication.getName();
 
         List<Task> list = taskService.getAllTasks();
         list.removeIf(Task -> Task.getLocalDate()!=null);
 
-        if (userService.findByUsername(s)!=null) {
-            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(s)));
-        }
-        else
+        if (userService.findByUsername(getUsernameUsingSecurityContext())!=null) {
+            list.retainAll(taskService.getAllTasksByUser(userService.findByUsername(getUsernameUsingSecurityContext())));
+        } else
         {
             list.removeIf(user -> user.getUser()!=null);
         }
 
         model.addAttribute("title", "Without date");
         model.addAttribute("all_tasks", list);
-        model.addAttribute("username", s);
+        model.addAttribute("username", getUsernameUsingSecurityContext());
 
         return "mainPage";
     }

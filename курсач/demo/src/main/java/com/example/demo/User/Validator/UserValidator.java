@@ -33,7 +33,7 @@ public class UserValidator implements Validator {
         if (user.getUsername().length() < 8 || user.getUsername().length() > 32) {
             errors.rejectValue("username", "", "Username must be between 8 and 32 characters");
         }
-        // Поле username должно быть уникальным в системе И нельзя создать пользователя с юзернеймом 'anonymousUser'
+        // Поле username должно быть уникальным в системе И нельзя создать пользователя с юзернеймом 'anonymousUser' так как это имя используется для отделения гостя от пользователей при взятии имени из SecurityContextHolder
         if (userService.findByUsername(user.getUsername()) != null || user.getUsername().equals("anonymousUser")) {
             errors.rejectValue("username", "", "Username is already exists.");
         }
